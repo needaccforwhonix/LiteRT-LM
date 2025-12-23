@@ -469,16 +469,16 @@ ResourceManager::CreateContextHandler(const SessionConfig& session_config) {
       lora_hash_to_id_.find("fake_lora_path") != lora_hash_to_id_.end();
 
   // Find the lora id. If lora_id is not nullopt, it means the lora is used.
-  // TODO: b/462499294 - Use the real lora path.
-  std::optional<uint32_t> lora_id =
-      AssignLoraId(/*lora_path=*/"", /*has_scoped_lora_file=*/false);
+  std::optional<uint32_t> lora_id = AssignLoraId(
+      /*lora_path=*/"",
+      /*has_scoped_lora_file=*/session_config.GetScopedLoraFile() != nullptr);
 
   // If lora is used and not loaded, load the lora.
   if (lora_id.has_value() && !lora_is_loaded) {
-    // TODO: b/462499294 - Use the real lora path and scoped lora file.
-    ASSIGN_OR_RETURN(ModelAssets model_assets,
-                     ModelAssets::Create(/*scoped_lora_file=*/nullptr,
-                                         /*lora_path=*/""));
+    RET_CHECK(session_config.GetScopedLoraFile() != nullptr);
+    ASSIGN_OR_RETURN(
+        ModelAssets model_assets,
+        ModelAssets::Create(session_config.GetScopedLoraFile(), /*model_path=*/""));
     MovableMutexLock lock(&executor_mutex_);
     RETURN_IF_ERROR(llm_executor_->LoadLoRA(lora_id.value(), model_assets));
   }
